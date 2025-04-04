@@ -1,0 +1,137 @@
+/* General Styles */
+body {
+  margin: 0;
+  font-family: 'Arial', sans-serif;
+  background-color: #f9f9f9;
+  color: #333;
+  line-height: 1.6;
+}
+
+.App {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* Left Side: Code Input and Detected Language */
+.left-side {
+  flex: 1;
+  padding: 40px;
+  background-color: #f9f9f9;
+  border-right: 1px solid #ddd;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+h1 {
+  margin: 0 0 10px;
+  font-size: 2rem;
+  color: #007bff;
+}
+
+.subtitle {
+  margin: 0 0 20px;
+  color: #666;
+  font-size: 1rem;
+  text-align: center;
+}
+
+textarea {
+  width: 100%;
+  padding: 15px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  resize: vertical;
+  min-height: 200px;
+  margin-bottom: 20px;
+}
+
+/* Generate Button */
+.analyze-button {
+  background-color: #007bff;
+  color: white;
+  padding: 15px 30px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: bold;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.analyze-button:hover:not(:disabled) {
+  background-color: #0056b3;
+  transform: translateY(-2px);
+}
+
+.analyze-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+/* Loading Spinner */
+.spinner {
+  border: 4px solid rgba(255, 255, 255, 0.3);
+  border-top: 4px solid white;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.error {
+  color: #ff4d4d;
+  margin-top: 10px;
+  font-size: 0.9rem;
+}
+
+/* Detected Language */
+.detected-smell {
+  width: 100%;
+  margin-top: 20px;
+}
+
+.detected-smell h2 {
+  margin: 0 0 15px;
+  font-size: 1.25rem;
+  color: #007bff;
+}
+
+/* Right Side: Generated Test Cases */
+.right-side {
+  flex: 1;
+  padding: 40px;
+  background-color: #f9f9f9;
+  display: flex;
+  flex-direction: column;
+}
+
+.right-side h2 {
+  margin: 0 0 15px;
+  font-size: 1.25rem;
+  color: #007bff;
+}
+
+.output-content {
+  background: white;
+  padding: 15px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  max-height: 700px;
+  overflow-y: auto;
+}
