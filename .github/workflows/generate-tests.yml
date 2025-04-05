@@ -24,8 +24,7 @@ jobs:
         pip install -r requirements.txt
 
     - name: Start Flask backend
-      # Update the working-directory below if your app.py is in a subfolder (e.g., src or backend)
-      working-directory: .
+      working-directory: src
       run: |
         export OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
         nohup python app.py & sleep 5
