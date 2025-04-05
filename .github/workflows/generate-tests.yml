@@ -33,7 +33,7 @@ jobs:
         python test_generator.py
 
     - name: Upload generated test cases
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v2
       with:
         name: test-cases-report
         path: generated_tests_report.md
