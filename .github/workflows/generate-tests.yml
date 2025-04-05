@@ -1,13 +1,10 @@
 name: Auto Generate Unit Tests
 
 on:
-  pull_request:
-    paths:
-      - '**/*.py'
-      - '**/*.java'
+  pull_request  
 
 permissions:
-  contents: write  # Needed to commit changes to the repo
+  contents: write  
 
 jobs:
   test-generation:
@@ -27,7 +24,7 @@ jobs:
         pip install -r requirements.txt
 
     - name: Start Flask backend
-      working-directory: src  # ✅ change if app.py is in a different folder
+      working-directory: src  
       run: |
         export OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
         nohup python app.py & sleep 5
@@ -37,9 +34,10 @@ jobs:
         python test_generator.py
         echo "✅ Test cases written to generated_tests_report.md"
         echo "---- GENERATED TEST CASES ----"
-        cat generated_tests_report.md
+        cat generated_tests_report.md || echo "No file generated."
 
     - name: Commit and push generated test report
+      if: success() && hashFiles('generated_tests_report.md') != ''
       run: |
         git config --global user.name "github-actions[bot]"
         git config --global user.email "github-actions[bot]@users.noreply.github.com"
@@ -50,7 +48,6 @@ jobs:
         git push
 
     - name: Stop Flask backend
-      working-directory: src  # ✅ change if app.py is in a different folder
+      working-directory: src 
       run: |
-        kill $(lsof -t -i:5000) || true # Kill the Flask process              
-        echo "✅ Flask backend stopped" 
+        kill $(lsof -t -i:5000) || echo "Flask backend not running."  
