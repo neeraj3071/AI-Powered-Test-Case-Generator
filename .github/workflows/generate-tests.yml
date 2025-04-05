@@ -1,10 +1,10 @@
 name: Auto Generate Unit Tests
 
 on:
-  pull_request  # Runs on any PR regardless of file type
+  pull_request  # Runs on any file change in a PR
 
 permissions:
-  contents: write  # Allows GitHub Actions to push changes
+  contents: write  # Allows GitHub Actions to push commits
 
 jobs:
   test-generation:
@@ -24,7 +24,7 @@ jobs:
         pip install -r requirements.txt
 
     - name: Start Flask backend
-      working-directory: src  # Change this if your app.py is in a different folder
+      working-directory: src  # 🔁 change if app.py is in a different folder
       run: |
         export OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
         nohup python app.py & sleep 5
@@ -43,13 +43,16 @@ jobs:
         git config --global user.email "github-actions[bot]@users.noreply.github.com"
         mkdir -p reports
         mv generated_tests_report.md reports/generated_tests_report.md
+
+        # Create local branch from detached HEAD
         git checkout -b temp-branch
+
+        # Add and commit report
         git add reports/generated_tests_report.md
         git commit -m "🧪 Add generated test report"
+
+        # Pull latest changes from PR branch (avoid push conflicts)
+        git pull --rebase origin ${{ github.head_ref }}
+
+        # Push changes back to the same PR branch
         git push origin HEAD:${{ github.head_ref }}
-
-
-    - name: Stop Flask backend
-      working-directory: src 
-      run: |
-        kill $(lsof -t -i:5000) || echo "Flask backend not running."  
