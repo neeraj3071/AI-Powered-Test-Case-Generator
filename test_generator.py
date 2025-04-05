@@ -12,10 +12,11 @@ FRAMEWORK_MAP = {
 
 def get_changed_files():
     try:
-        # Get files changed in this PR
-        output = subprocess.check_output(["git", "diff", "--name-only", "origin/main...HEAD"]).decode()
+        # More reliable in GitHub Actions: compares current commit with previous
+        output = subprocess.check_output(["git", "diff", "--name-only", "HEAD~1"]).decode()
         return [line.strip() for line in output.split("\n") if line.strip()]
-    except subprocess.CalledProcessError:
+    except subprocess.CalledProcessError as e:
+        print(f"Error getting changed files: {e}")
         return []
 
 def read_file_content(path):
@@ -35,6 +36,10 @@ def send_to_backend(code, framework):
 
 def main():
     changed_files = get_changed_files()
+    if not changed_files:
+        print("⚠️ No changed .py or .java files found.")
+        return
+
     results = []
 
     for file in changed_files:
@@ -55,7 +60,7 @@ def main():
 
             results.append(result)
 
-    # Output all results
+    # Output all results to Markdown file
     with open("generated_tests_report.md", "w", encoding="utf-8") as f:
         for r in results:
             f.write(f"### {r['file']} ({r['framework']})\n")
