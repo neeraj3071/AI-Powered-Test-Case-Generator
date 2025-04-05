@@ -12,10 +12,21 @@ FRAMEWORK_MAP = {
 
 def get_changed_files():
     try:
-        # Get files changed in this PR
-        output = subprocess.check_output(["git", "diff", "--name-only", "origin/main...HEAD"]).decode()
+        # Try HEAD~1 (normal case)
+        try:
+            output = subprocess.check_output(["git", "diff", "--name-only", "HEAD~1"]).decode()
+            files = [line.strip() for line in output.split("\n") if line.strip()]
+            if files:
+                return files
+        except subprocess.CalledProcessError as e:
+            print(f"HEAD~1 diff failed: {e}")
+
+        # Fallback for first commit or shallow clone
+        print("Using fallback: listing all tracked files with git ls-files")
+        output = subprocess.check_output(["git", "ls-files"]).decode()
         return [line.strip() for line in output.split("\n") if line.strip()]
-    except subprocess.CalledProcessError:
+    except Exception as e:
+        print(f"Error getting files: {e}")
         return []
 
 def read_file_content(path):
@@ -42,8 +53,11 @@ def main():
         if ext in SUPPORTED_EXTENSIONS:
             print(f"\n📄 Processing {file}...")
             code = read_file_content(file)
-            framework = FRAMEWORK_MAP.get(ext, "pytest")
+            if not code.strip():
+                print(f"⚠️ Skipping empty file: {file}")
+                continue
 
+            framework = FRAMEWORK_MAP.get(ext, "pytest")
             response = send_to_backend(code, framework)
 
             result = {
@@ -55,8 +69,13 @@ def main():
 
             results.append(result)
 
+    if not results:
+        print("⚠️ No supported files found or no test cases generated.")
+        return
+
     # Output all results
-    with open("generated_tests_report.md", "w", encoding="utf-8") as f:
+    report_file = "generated_tests_report.md"
+    with open(report_file, "w", encoding="utf-8") as f:
         for r in results:
             f.write(f"### {r['file']} ({r['framework']})\n")
             f.write(f"**Detected Language**: {r['language']}\n\n")
@@ -65,7 +84,10 @@ def main():
                 r["tests"]
             ))
 
-    print("✅ Test cases written to generated_tests_report.md")
+    print("✅ Test cases written to generated_tests_report.md\n")
+    print("---- GENERATED TEST CASES ----\n")
+    with open(report_file, "r", encoding="utf-8") as f:
+        print(f.read())
 
 if __name__ == "__main__":
     main()
