@@ -6,6 +6,9 @@ on:
       - '**/*.py'
       - '**/*.java'
 
+permissions:
+  contents: write  # Needed to commit changes to the repo
+
 jobs:
   test-generation:
     runs-on: ubuntu-latest
@@ -24,7 +27,7 @@ jobs:
         pip install -r requirements.txt
 
     - name: Start Flask backend
-      working-directory: src
+      working-directory: src  # ✅ change if app.py is in a different folder
       run: |
         export OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
         nohup python app.py & sleep 5
@@ -36,7 +39,18 @@ jobs:
         echo "---- GENERATED TEST CASES ----"
         cat generated_tests_report.md
 
+    - name: Commit and push generated test report
+      run: |
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        mkdir -p reports
+        mv generated_tests_report.md reports/generated_tests_report.md
+        git add reports/generated_tests_report.md
+        git commit -m "🧪 Add generated test report"
+        git push
+
     - name: Stop Flask backend
-      run: |        
-        kill $(lsof -t -i:5000) || true        
-        echo "✅ Flask backend stopped"
+      working-directory: src  # ✅ change if app.py is in a different folder
+      run: |
+        kill $(lsof -t -i:5000) || true # Kill the Flask process              
+        echo "✅ Flask backend stopped" 
