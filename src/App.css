@@ -12,9 +12,9 @@ body {
   min-height: 100vh;
 }
 
-/* Left Side: Code Input and Detected Language */
+/* Left Side: Code Input */
 .left-side {
-  flex: 1;
+  width: 45%;
   padding: 40px;
   background-color: #f9f9f9;
   border-right: 1px solid #ddd;
@@ -46,6 +46,8 @@ textarea {
   resize: vertical;
   min-height: 200px;
   margin-bottom: 20px;
+  background-color: #1e1e1e;
+  color: #f1f1f1;
 }
 
 /* Generate Button */
@@ -108,10 +110,10 @@ textarea {
   color: #007bff;
 }
 
-/* Right Side: Generated Test Cases */
+/* Right Side: Test Output */
 .right-side {
-  flex: 1;
-  padding: 40px;
+  width: 55%;
+  padding: 40px 30px;
   background-color: #f9f9f9;
   display: flex;
   flex-direction: column;
@@ -134,4 +136,32 @@ textarea {
   word-wrap: break-word;
   max-height: 700px;
   overflow-y: auto;
+}
+
+/* Buttons below output */
+.right-side button {
+  background-color: #28a745;
+  color: white;
+  padding: 10px 15px;
+  border: none;
+  font-size: 14px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.right-side button:hover {
+  background-color: #218838;
+}
+
+/* Syntax highlighter fix */
+.right-side .react-syntax-highlighter {
+  background-color: #1e1e1e !important;
+  border-radius: 8px;
+  padding: 20px !important;
+  font-size: 14px;
+  overflow-x: auto;
+  max-width: 100%;
+  box-sizing: border-box;
+  color: #f8f8f2;
 }
