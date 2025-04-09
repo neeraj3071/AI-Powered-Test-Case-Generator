@@ -10,6 +10,7 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [selectedFramework, setSelectedFramework] = useState('pytest');
+  const [feedback, setFeedback] = useState('');
 
   const handleGenerateClick = useCallback(async () => {
     if (!inputCode.trim()) {
@@ -21,12 +22,12 @@ function App() {
     const isPython = /def\s+\w+\s*\(|print\(|import\s+\w+/.test(inputCode);
 
     if (isJava && selectedFramework !== 'junit') {
-      setError("\u26A0\uFE0F Java code detected. Please select JUnit as the testing framework.");
+      setError("⚠️ Java code detected. Please select JUnit as the testing framework.");
       return;
     }
 
     if (isPython && selectedFramework === 'junit') {
-      setError("\u26A0\uFE0F Python code detected. JUnit is not compatible. Please select Pytest or Doctest.");
+      setError("⚠️ Python code detected. JUnit is not compatible. Please select Pytest or Doctest.");
       return;
     }
 
@@ -51,28 +52,50 @@ function App() {
 
       const data = await response.json();
 
-      if (data.detected_language && data.generated_tests) {
-        setDetectedLanguage(data.detected_language);
-        setGeneratedTestCases(data.generated_tests);
-      } else {
-        setDetectedLanguage("Could not detect language.");
-        setGeneratedTestCases("No test cases generated.");
-      }
-
+      setDetectedLanguage(data.detected_language || "Unknown");
+      setGeneratedTestCases(data.generated_tests || "No test cases generated.");
     } catch (error) {
       console.error("Error:", error);
       setError("An error occurred. Please try again later.");
-      setDetectedLanguage("Error: " + error.message);
-      setGeneratedTestCases("Error: " + error.message);
     } finally {
       setLoading(false);
     }
   }, [inputCode, selectedFramework]);
 
+  const handleFeedbackSubmit = async () => {
+    if (!feedback.trim()) return;
+
+    setLoading(true);
+    setError('');
+
+    try {
+      const response = await fetch("http://127.0.0.1:5000/regenerate_tests_with_feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code: inputCode,
+          framework: selectedFramework,
+          feedback: feedback
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to regenerate: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      setGeneratedTestCases(data.generated_tests || "No updated test cases generated.");
+    } catch (error) {
+      setError("Error during feedback regeneration: " + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleCopy = () => {
     if (generatedTestCases) {
       navigator.clipboard.writeText(generatedTestCases);
-      alert("\u2705 Test cases copied to clipboard!");
+      alert("✅ Test cases copied to clipboard!");
     }
   };
 
@@ -80,17 +103,13 @@ function App() {
     if (generatedTestCases) {
       let extension = ".txt";
 
-      if (selectedFramework === "junit") {
-        extension = ".java";
-      } else if (selectedFramework === "pytest" || selectedFramework === "doctest") {
-        extension = ".py";
-      }
+      if (selectedFramework === "junit") extension = ".java";
+      if (["pytest", "doctest"].includes(selectedFramework)) extension = ".py";
 
-      const fileName = `generated_test_cases${extension}`;
-      const element = document.createElement("a");
       const file = new Blob([generatedTestCases], { type: "text/plain" });
+      const element = document.createElement("a");
       element.href = URL.createObjectURL(file);
-      element.download = fileName;
+      element.download = `generated_test_cases${extension}`;
       document.body.appendChild(element);
       element.click();
       document.body.removeChild(element);
@@ -110,12 +129,11 @@ function App() {
           rows="10"
         ></textarea>
 
-        <label htmlFor="test-framework" style={{ marginTop: '15px', display: 'block', fontWeight: 'bold' }}>Choose Testing Framework:</label>
+        <label htmlFor="test-framework" style={{ marginTop: '15px', fontWeight: 'bold' }}>Choose Testing Framework:</label>
         <select
           id="test-framework"
           value={selectedFramework}
           onChange={(e) => setSelectedFramework(e.target.value)}
-          style={{ padding: '5px', marginTop: '5px' }}
         >
           <option value="pytest">Pytest (Python)</option>
           <option value="junit">JUnit (Java)</option>
@@ -149,10 +167,33 @@ function App() {
         )}
 
         {generatedTestCases && (
-          <div style={{ marginTop: "1rem", display: "flex", gap: "10px" }}>
-            <button onClick={handleCopy}>📋 Copy to Clipboard</button>
-            <button onClick={handleDownload}>📥 Download as File</button>
-          </div>
+          <>
+            <div style={{ marginTop: "1rem", display: "flex", gap: "10px" }}>
+              <button onClick={handleCopy}>📋 Copy to Clipboard</button>
+              <button onClick={handleDownload}>📥 Download as File</button>
+            </div>
+
+            <div className="feedback-section" style={{ marginTop: "20px" }}>
+              <h3>Not happy with the test cases?</h3>
+              <textarea
+                placeholder="Enter your feedback here (e.g., add more edge cases, use mocks)..."
+                value={feedback}
+                onChange={(e) => setFeedback(e.target.value)}
+                rows="4"
+                style={{
+                  width: "100%",
+                  padding: "10px",
+                  marginTop: "10px",
+                  fontSize: "14px",
+                  borderRadius: "6px",
+                  border: "1px solid #ccc",
+                }}
+              />
+              <button onClick={handleFeedbackSubmit} style={{ marginTop: "10px" }}>
+                💬 Submit Feedback & Regenerate
+              </button>
+            </div>
+          </>
         )}
       </div>
     </div>
