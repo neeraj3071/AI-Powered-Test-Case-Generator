@@ -1,2 +1,0 @@
-- `src/app.py` → **generated_unit_test_cases/nameTest.txt** (The programming language of the provided code snippet is Python, pytest)
-- `test_generator.py` → **generated_unit_test_cases/GeneratedTest.py** (Python, pytest)
