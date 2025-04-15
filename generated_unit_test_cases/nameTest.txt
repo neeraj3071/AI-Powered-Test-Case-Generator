@@ -1,58 +1,68 @@
-Here are some unit tests using pytest for the provided code:
+Here are some pytest unit tests for the Flask application:
 
 ```python
 import pytest
+import os
 from unittest.mock import patch, MagicMock
-from your_flask_app import app, detect_language, generate_test_cases, extract_class_name, save_test_case_to_file
+from flask import Flask
+from your_flask_app import app, client, detect_language, generate_test_cases, extract_class_name, save_test_case_to_file
 
-# Test for detect_language function
-@patch('your_flask_app.client.chat.completions.create')
-def test_detect_language(mock_create):
-    mock_create.return_value = MagicMock(choices=[MagicMock(message=MagicMock(content='Python'))])
-    result = detect_language('print("Hello, World!")')
-    assert result == 'Python', 'Expected Python, but got {}'.format(result)
+# Mocking the OpenAI client
+client = MagicMock()
 
-# Test for generate_test_cases function
-@patch('your_flask_app.client.chat.completions.create')
-def test_generate_test_cases(mock_create):
-    mock_create.return_value = MagicMock(choices=[MagicMock(message=MagicMock(content='Test cases'))])
-    result = generate_test_cases('print("Hello, World!")', 'Python', 'pytest')
-    assert result == 'Test cases', 'Expected Test cases, but got {}'.format(result)
+# Mocking the Flask app
+app = Flask(__name__)
 
-# Test for extract_class_name function
+def test_detect_language():
+    # Testing the function with a Python code snippet
+    code = "print('Hello, World!')"
+    with patch('your_flask_app.client.chat.completions.create') as mock:
+        mock.return_value.choices[0].message.content = 'Python'
+        result = detect_language(code)
+        assert result == 'Python'
+
+def test_generate_test_cases():
+    # Testing the function with a Python code snippet and pytest framework
+    code = "print('Hello, World!')"
+    language = 'Python'
+    framework = 'pytest'
+    with patch('your_flask_app.client.chat.completions.create') as mock:
+        mock.return_value.choices[0].message.content = 'Test cases generated'
+        result = generate_test_cases(code, language, framework)
+        assert result == 'Test cases generated'
+
 def test_extract_class_name():
-    code = 'class HelloWorld:\n    pass'
-    result = extract_class_name(code, 'Python')
-    assert result == 'HelloWorld', 'Expected HelloWorld, but got {}'.format(result)
+    # Testing the function with a Python class
+    code = "class MyClass:\n    pass"
+    language = 'Python'
+    result = extract_class_name(code, language)
+    assert result == 'MyClass'
 
-# Test for save_test_case_to_file function
-@patch('builtins.open', new_callable=MagicMock)
-def test_save_test_case_to_file(mock_open):
-    save_test_case_to_file('HelloWorld', 'Python', 'Test cases')
-    mock_open.assert_called_once_with('generated_unit_test_cases/HelloWorldTest.py', 'w', encoding='utf-8')
+def test_save_test_case_to_file():
+    # Testing the function with a Python class and test code
+    class_name = 'MyClass'
+    language = 'Python'
+    test_code = 'def test_my_class():\n    assert True'
+    save_test_case_to_file(class_name, language, test_code)
+    assert os.path.exists(f'generated_unit_test_cases/{class_name}Test.py')
 
-# Test for generate_tests endpoint
-@patch('your_flask_app.detect_language')
-@patch('your_flask_app.generate_test_cases')
-@patch('your_flask_app.extract_class_name')
-@patch('your_flask_app.save_test_case_to_file')
-def test_generate_tests_endpoint(mock_save, mock_extract, mock_generate, mock_detect):
-    mock_detect.return_value = 'Python'
-    mock_generate.return_value = 'Test cases'
-    mock_extract.return_value = 'HelloWorld'
-    with app.test_client() as c:
-        response = c.post('/generate_tests', json={'code': 'print("Hello, World!")', 'framework': 'pytest'})
+@pytest.fixture
+def client():
+    with app.test_client() as client:
+        yield client
+
+def test_generate_tests_endpoint(client):
+    # Testing the endpoint with a POST request and a Python code snippet
+    response = client.post('/generate_tests', json={'code': "print('Hello, World!')", 'framework': 'pytest'})
     assert response.status_code == 200
-    assert response.get_json() == {'detected_language': 'Python', 'generated_tests': 'Test cases'}
+    assert 'detected_language' in response.get_json()
+    assert 'generated_tests' in response.get_json()
 
-# Test for regenerate_tests_with_feedback endpoint
-@patch('your_flask_app.client.chat.completions.create')
-def test_regenerate_with_feedback(mock_create):
-    mock_create.return_value = MagicMock(choices=[MagicMock(message=MagicMock(content='Test cases'))])
-    with app.test_client() as c:
-        response = c.post('/regenerate_tests_with_feedback', json={'code': 'print("Hello, World!")', 'framework': 'pytest', 'feedback': 'Feedback'})
+def test_regenerate_tests_with_feedback_endpoint(client):
+    # Testing the endpoint with a POST request, a Python code snippet and feedback
+    response = client.post('/regenerate_tests_with_feedback', json={'code': "print('Hello, World!')", 'framework': 'pytest', 'feedback': 'Include more test cases'})
     assert response.status_code == 200
-    assert response.get_json() == {'generated_tests': 'Test cases'}
+    assert 'generated_tests' in response.get_json()
 ```
 
-Please replace `your_flask_app` with the actual name of your Flask application module.
+Please replace `your_flask_app` with the actual name of your Flask application file (without the .py extension). This code assumes that the Flask application and the test file are in the same directory. If they are not, you will need to adjust the import statements accordingly.
