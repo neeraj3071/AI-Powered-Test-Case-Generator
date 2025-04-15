@@ -1,4 +1,2 @@
-- `generated_unit_test_cases/GeneratedTest.py` → **generated_unit_test_cases/TestClassTest.py** (Python, pytest)
-- `generated_unit_test_cases/MyClassTest.py` → **generated_unit_test_cases/MyClassTest.py** (Python, pytest)
-- `src/app.py` → **generated_unit_test_cases/nameTest.txt** (The programming language is Python., pytest)
+- `src/app.py` → **generated_unit_test_cases/nameTest.txt** (The programming language of the provided code snippet is Python, pytest)
 - `test_generator.py` → **generated_unit_test_cases/GeneratedTest.py** (Python, pytest)
