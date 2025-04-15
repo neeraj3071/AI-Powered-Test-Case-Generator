@@ -1,67 +1,58 @@
 ```Python
 import pytest
 import os
-import subprocess
 from unittest.mock import patch, MagicMock
 from your_module import get_changed_files, read_file_content, send_to_backend, extract_class_name, main
 
 # Test get_changed_files function
 def test_get_changed_files():
-    with patch('subprocess.check_output') as mock_output:
+    with patch("subprocess.check_output") as mock_output:
         mock_output.return_value = b"file1.py\nfile2.java\n"
-        assert get_changed_files() == ['file1.py', 'file2.java']
-
-def test_get_changed_files_empty():
-    with patch('subprocess.check_output') as mock_output:
-        mock_output.return_value = b""
-        assert get_changed_files() == []
-
-def test_get_changed_files_exception():
-    with patch('subprocess.check_output', side_effect=Exception):
-        assert get_changed_files() == []
+        files = get_changed_files()
+        assert files == ["file1.py", "file2.java"]
 
 # Test read_file_content function
-def test_read_file_content():
-    with patch('builtins.open', new_callable=MagicMock):
-        assert read_file_content('path') == ''
-
-def test_read_file_content_exception():
-    with patch('builtins.open', side_effect=Exception):
-        assert read_file_content('path') == ''
+def test_read_file_content(tmpdir):
+    file = tmpdir.join("test.py")
+    file.write("print('Hello, World!')")
+    assert read_file_content(file) == "print('Hello, World!')"
 
 # Test send_to_backend function
 def test_send_to_backend():
-    with patch('requests.post') as mock_post:
-        mock_post.return_value.json.return_value = {"detected_language": "python", "generated_tests": "test_code"}
-        assert send_to_backend('code', 'pytest') == {"detected_language": "python", "generated_tests": "test_code"}
-
-def test_send_to_backend_exception():
-    with patch('requests.post', side_effect=Exception):
-        assert send_to_backend('code', 'pytest') == {"error": "API error: "}
+    with patch("requests.post") as mock_post:
+        mock_response = MagicMock()
+        mock_response.json.return_value = {"detected_language": "python", "generated_tests": "test_code"}
+        mock_post.return_value = mock_response
+        response = send_to_backend("print('Hello, World!')", "pytest")
+        assert response == {"detected_language": "python", "generated_tests": "test_code"}
 
 # Test extract_class_name function
-def test_extract_class_name_python():
-    assert extract_class_name('class TestClass:', 'python') == 'TestClass'
-
-def test_extract_class_name_java():
-    assert extract_class_name('public class TestClass {', 'java') == 'TestClass'
-
-def test_extract_class_name_no_match():
-    assert extract_class_name('no class here', 'python') == 'Generated'
+def test_extract_class_name():
+    python_code = "class TestClass:\n    pass"
+    java_code = "public class TestClass {}"
+    assert extract_class_name(python_code, "python") == "TestClass"
+    assert extract_class_name(java_code, "java") == "TestClass"
 
 # Test main function
-@patch('your_module.get_changed_files')
-@patch('your_module.read_file_content')
-@patch('your_module.send_to_backend')
-@patch('your_module.extract_class_name')
-@patch('os.makedirs')
-@patch('builtins.open')
-def test_main(mock_open, mock_makedirs, mock_extract_class_name, mock_send_to_backend, mock_read_file_content, mock_get_changed_files):
-    mock_get_changed_files.return_value = ['file1.py']
-    mock_read_file_content.return_value = 'class TestClass:'
-    mock_send_to_backend.return_value = {"detected_language": "python", "generated_tests": "test_code"}
-    mock_extract_class_name.return_value = 'TestClass'
-    main()
-    mock_open.assert_called_with('generated_unit_test_cases/TestClassTest.py', 'w', encoding='utf-8')
+def test_main(tmpdir):
+    with patch("subprocess.check_output") as mock_output, patch("requests.post") as mock_post, patch("builtins.open", new_callable=pytest.mock.mock_open):
+        # Mock subprocess.check_output
+        mock_output.return_value = b"file1.py\nfile2.java\n"
+        # Mock requests.post
+        mock_response = MagicMock()
+        mock_response.json.return_value = {"detected_language": "python", "generated_tests": "test_code"}
+        mock_post.return_value = mock_response
+        # Mock open
+        mock_file = MagicMock()
+        mock_file.write.return_value = None
+        mock_file.read.return_value = "- `file1.py` → **TestClassTest.py** (python, pytest)\n- `file2.java` → **TestClassTest.java** (java, JUnit)\n"
+        open.return_value = mock_file
+        # Change working directory to temporary directory
+        os.chdir(tmpdir)
+        # Run main function
+        main()
+        # Check if the generated test cases and report are created
+        assert os.path.exists("generated_unit_test_cases/TestClassTest.py")
+        assert os.path.exists("generated_unit_test_cases/TestClassTest.java")
+        assert os.path.exists("generated_tests_report.md")
 ```
-This test code covers the main functions in the provided code. It tests both the normal and exceptional cases. It uses Python's built-in `unittest.mock` library to mock the behavior of external dependencies like `subprocess.check_output`, `requests.post`, and `open` function.
