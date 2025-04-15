@@ -48,14 +48,16 @@ jobs:
         # Create local branch from detached HEAD
         git checkout -b temp-branch
 
-        # Stage report + generated test files
+        # Stage the changes
         git add reports/generated_tests_report.md
         git add generated_unit_test_cases/
 
-        git commit -m "🧪 Add generated unit test cases and report"
+        # Only commit if there are changes
+        git diff --cached --quiet || git commit -m "🧪 Add generated unit test cases and report"
 
-        # Avoid push conflicts by pulling latest
-        git pull --rebase origin ${{ github.head_ref }}
+        # ✅ Fix: Disable rebase and pull with conflict resolution
+        git config pull.rebase false
+        git pull --no-rebase origin ${{ github.head_ref }} --strategy=ours --no-edit
 
-        # Push to the same PR branch
+        # ✅ Push back to the PR branch
         git push origin HEAD:${{ github.head_ref }}
