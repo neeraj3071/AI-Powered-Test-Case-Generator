@@ -165,3 +165,49 @@ textarea {
   box-sizing: border-box;
   color: #f8f8f2;
 }
+/* Feedback Section */
+.feedback-section {
+  margin-top: 20px;
+}
+
+.feedback-section h3 {
+  font-size: 1rem;
+  margin-bottom: 10px;
+  color: #333;
+}
+
+.feedback-section textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-family: 'Arial', sans-serif;
+  font-size: 14px;
+  resize: vertical;
+  background-color: #fff;
+  color: #333;
+  min-height: 100px;
+}
+
+.feedback-section textarea:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 5px rgba(0, 123, 255, 0.3);
+}
+
+.feedback-section button {
+  margin-top: 10px;
+  background-color: #17a2b8;
+  color: white;
+  padding: 10px 15px;
+  border: none;
+  font-size: 14px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.feedback-section button:hover {
+  background-color: #138496;
+}
+

@@ -1,0 +1,92 @@
+Here are some pytest unit tests for the provided code:
+
+```python
+import pytest
+import os
+from unittest.mock import patch, Mock
+from flask import Flask
+from your_module import app, detect_language, generate_test_cases, extract_class_name, save_test_case_to_file
+
+# Mocking OpenAI client
+class MockClient:
+    def chat(self):
+        return self
+
+    def completions(self):
+        return self
+
+    def create(self, model, messages, temperature, max_tokens):
+        return Mock(choices=[Mock(message=Mock(content='Python'))])
+
+# Mocking OpenAI client for error scenario
+class MockClientError:
+    def chat(self):
+        return self
+
+    def completions(self):
+        return self
+
+    def create(self, model, messages, temperature, max_tokens):
+        raise Exception('OpenAI error')
+
+# Test detect_language function
+@patch('your_module.client', new_callable=MockClient)
+def test_detect_language():
+    code = 'print("Hello, World!")'
+    assert detect_language(code) == 'Python'
+
+# Test detect_language function with error
+@patch('your_module.client', new_callable=MockClientError)
+def test_detect_language_error():
+    code = 'print("Hello, World!")'
+    assert detect_language(code) == 'Unknown'
+
+# Test generate_test_cases function
+@patch('your_module.client', new_callable=MockClient)
+def test_generate_test_cases():
+    code = 'print("Hello, World!")'
+    language = 'Python'
+    framework = 'pytest'
+    assert generate_test_cases(code, language, framework) == 'Python'
+
+# Test generate_test_cases function with error
+@patch('your_module.client', new_callable=MockClientError)
+def test_generate_test_cases_error():
+    code = 'print("Hello, World!")'
+    language = 'Python'
+    framework = 'pytest'
+    assert generate_test_cases(code, language, framework).startswith('# Error generating test cases')
+
+# Test extract_class_name function
+def test_extract_class_name():
+    code = 'class HelloWorld:'
+    language = 'Python'
+    assert extract_class_name(code, language) == 'HelloWorld'
+
+# Test save_test_case_to_file function
+def test_save_test_case_to_file(tmpdir):
+    class_name = 'HelloWorld'
+    language = 'Python'
+    test_code = 'def test_hello_world():\n    assert True'
+    save_test_case_to_file(class_name, language, test_code)
+    assert os.path.exists(f'generated_unit_test_cases/HelloWorldTest.py')
+
+# Test generate_tests endpoint
+def test_generate_tests_endpoint():
+    with app.test_client() as c:
+        rv = c.post('/generate_tests', json={'code': 'print("Hello, World!")', 'framework': 'pytest'})
+        json_data = rv.get_json()
+        assert rv.status_code == 200
+        assert 'detected_language' in json_data
+        assert 'generated_tests' in json_data
+
+# Test regenerate_tests_with_feedback endpoint
+def test_regenerate_tests_with_feedback_endpoint():
+    with app.test_client() as c:
+        rv = c.post('/regenerate_tests_with_feedback', json={'code': 'print("Hello, World!")', 'framework': 'pytest', 'feedback': 'Test feedback'})
+        json_data = rv.get_json()
+        assert rv.status_code == 200
+        assert 'generated_tests' in json_data
+```
+
+Please replace `your_module` with the actual name of the module where the Flask app is defined. These tests cover normal, edge and invalid cases for the functions and endpoints in the provided code.
