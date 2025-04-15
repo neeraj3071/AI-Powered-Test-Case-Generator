@@ -87,7 +87,7 @@ Output ONLY the test code — no markdown, no explanations, no extra text.
 """
     try:
         response = client.chat.completions.create(
-            model="gpt-4-0613",
+            model="gpt-4",
             messages=[{"role": "user", "content": prompt}],
             temperature=0.3,
             max_tokens=1000
