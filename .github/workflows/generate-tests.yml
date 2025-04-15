@@ -55,7 +55,8 @@ jobs:
         git commit -m "🧪 Add generated unit test cases and report"
 
         # Avoid push conflicts by pulling latest
-        git pull --rebase origin ${{ github.head_ref }}
+        git pull origin ${{ github.head_ref }} --strategy=ours --no-edit
+
 
         # Push to the same PR branch
         git push origin HEAD:${{ github.head_ref }}
