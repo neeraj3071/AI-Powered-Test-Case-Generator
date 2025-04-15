@@ -56,7 +56,7 @@ Only respond with the language name, without any additional text.
 """
     try:
         response = client.chat.completions.create(
-            model="gpt-4-0613",
+            model="gpt-4",
             messages=[{"role": "user", "content": prompt}],
             temperature=0,
             max_tokens=10
@@ -183,7 +183,7 @@ Testing Instructions:
 Output ONLY the test code — no markdown, no extra text.
 """
         response = client.chat.completions.create(
-            model="gpt-4-0613",
+            model="gpt-4",
             messages=[{"role": "user", "content": prompt}],
             temperature=0.3,
             max_tokens=1000
