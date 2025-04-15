@@ -1,89 +1,67 @@
 ```Python
 import pytest
 import os
-import json
-import requests
 import subprocess
-import re
-from unittest.mock import patch, Mock
+from unittest.mock import patch, MagicMock
+from your_module import get_changed_files, read_file_content, send_to_backend, extract_class_name, main
 
-# Import the module to test
-import my_module
-
+# Test get_changed_files function
 def test_get_changed_files():
-    # Mock subprocess.check_output to return a list of files
-    with patch('subprocess.check_output') as mock_check_output:
-        mock_check_output.return_value = b'file1.py\nfile2.java\n'
-        files = my_module.get_changed_files()
-        assert files == ['file1.py', 'file2.java']
+    with patch('subprocess.check_output') as mock_output:
+        mock_output.return_value = b"file1.py\nfile2.java\n"
+        assert get_changed_files() == ['file1.py', 'file2.java']
 
-    # Test the exception case
-    with patch('subprocess.check_output', side_effect=subprocess.CalledProcessError(1, 'cmd')):
-        files = my_module.get_changed_files()
-        assert files == []
+def test_get_changed_files_empty():
+    with patch('subprocess.check_output') as mock_output:
+        mock_output.return_value = b""
+        assert get_changed_files() == []
 
+def test_get_changed_files_exception():
+    with patch('subprocess.check_output', side_effect=Exception):
+        assert get_changed_files() == []
+
+# Test read_file_content function
 def test_read_file_content():
-    # Mock open to return a string
-    with patch('builtins.open', new_callable=Mock) as mock_open:
-        mock_open.return_value.__enter__.return_value.read.return_value = 'file content'
-        content = my_module.read_file_content('path')
-        assert content == 'file content'
+    with patch('builtins.open', new_callable=MagicMock):
+        assert read_file_content('path') == ''
 
-    # Test the exception case
-    with patch('builtins.open', side_effect=Exception('error')):
-        content = my_module.read_file_content('path')
-        assert content == ''
+def test_read_file_content_exception():
+    with patch('builtins.open', side_effect=Exception):
+        assert read_file_content('path') == ''
 
+# Test send_to_backend function
 def test_send_to_backend():
-    # Mock requests.post to return a json response
     with patch('requests.post') as mock_post:
-        mock_post.return_value.json.return_value = {'response': 'success'}
-        response = my_module.send_to_backend('code', 'pytest')
-        assert response == {'response': 'success'}
+        mock_post.return_value.json.return_value = {"detected_language": "python", "generated_tests": "test_code"}
+        assert send_to_backend('code', 'pytest') == {"detected_language": "python", "generated_tests": "test_code"}
 
-    # Test the exception case
-    with patch('requests.post', side_effect=Exception('error')):
-        response = my_module.send_to_backend('code', 'pytest')
-        assert response == {'error': 'API error: error'}
+def test_send_to_backend_exception():
+    with patch('requests.post', side_effect=Exception):
+        assert send_to_backend('code', 'pytest') == {"error": "API error: "}
 
-def test_extract_class_name():
-    # Test Python code
-    code = 'class MyClass:'
-    class_name = my_module.extract_class_name(code, 'Python')
-    assert class_name == 'MyClass'
+# Test extract_class_name function
+def test_extract_class_name_python():
+    assert extract_class_name('class TestClass:', 'python') == 'TestClass'
 
-    # Test Java code
-    code = 'public class MyClass {}'
-    class_name = my_module.extract_class_name(code, 'Java')
-    assert class_name == 'MyClass'
+def test_extract_class_name_java():
+    assert extract_class_name('public class TestClass {', 'java') == 'TestClass'
 
-    # Test unknown language
-    code = 'class MyClass:'
-    class_name = my_module.extract_class_name(code, 'Unknown')
-    assert class_name == 'Generated'
+def test_extract_class_name_no_match():
+    assert extract_class_name('no class here', 'python') == 'Generated'
 
-def test_main():
-    # Mock the functions called in main to test the flow
-    with patch('my_module.get_changed_files') as mock_get_files, \
-         patch('my_module.read_file_content') as mock_read_file, \
-         patch('my_module.send_to_backend') as mock_send_to_backend, \
-         patch('my_module.extract_class_name') as mock_extract_class, \
-         patch('builtins.open', new_callable=Mock) as mock_open:
-
-        mock_get_files.return_value = ['file1.py']
-        mock_read_file.return_value = 'class MyClass:'
-        mock_send_to_backend.return_value = {'detected_language': 'Python', 'generated_tests': 'test code'}
-        mock_extract_class.return_value = 'MyClass'
-
-        my_module.main()
-
-        # Check the calls to the mocked functions
-        mock_get_files.assert_called_once()
-        mock_read_file.assert_called_once_with('file1.py')
-        mock_send_to_backend.assert_called_once_with('class MyClass:', 'pytest')
-        mock_extract_class.assert_called_once_with('class MyClass:', 'Python')
-
-        # Check the file write calls
-        mock_open.assert_any_call(os.path.join('generated_unit_test_cases', 'MyClassTest.py'), 'w', encoding='utf-8')
-        mock_open.assert_any_call('generated_tests_report.md', 'w', encoding='utf-8')
+# Test main function
+@patch('your_module.get_changed_files')
+@patch('your_module.read_file_content')
+@patch('your_module.send_to_backend')
+@patch('your_module.extract_class_name')
+@patch('os.makedirs')
+@patch('builtins.open')
+def test_main(mock_open, mock_makedirs, mock_extract_class_name, mock_send_to_backend, mock_read_file_content, mock_get_changed_files):
+    mock_get_changed_files.return_value = ['file1.py']
+    mock_read_file_content.return_value = 'class TestClass:'
+    mock_send_to_backend.return_value = {"detected_language": "python", "generated_tests": "test_code"}
+    mock_extract_class_name.return_value = 'TestClass'
+    main()
+    mock_open.assert_called_with('generated_unit_test_cases/TestClassTest.py', 'w', encoding='utf-8')
 ```
+This test code covers the main functions in the provided code. It tests both the normal and exceptional cases. It uses Python's built-in `unittest.mock` library to mock the behavior of external dependencies like `subprocess.check_output`, `requests.post`, and `open` function.

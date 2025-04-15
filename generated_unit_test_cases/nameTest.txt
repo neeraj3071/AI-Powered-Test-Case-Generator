@@ -1,92 +1,58 @@
-Here are some pytest unit tests for the provided code:
+Here are some unit tests using pytest for the provided code:
 
 ```python
 import pytest
-import os
-from unittest.mock import patch, Mock
-from flask import Flask
-from your_module import app, detect_language, generate_test_cases, extract_class_name, save_test_case_to_file
+from unittest.mock import patch, MagicMock
+from your_flask_app import app, detect_language, generate_test_cases, extract_class_name, save_test_case_to_file
 
-# Mocking OpenAI client
-class MockClient:
-    def chat(self):
-        return self
+# Test for detect_language function
+@patch('your_flask_app.client.chat.completions.create')
+def test_detect_language(mock_create):
+    mock_create.return_value = MagicMock(choices=[MagicMock(message=MagicMock(content='Python'))])
+    result = detect_language('print("Hello, World!")')
+    assert result == 'Python', 'Expected Python, but got {}'.format(result)
 
-    def completions(self):
-        return self
+# Test for generate_test_cases function
+@patch('your_flask_app.client.chat.completions.create')
+def test_generate_test_cases(mock_create):
+    mock_create.return_value = MagicMock(choices=[MagicMock(message=MagicMock(content='Test cases'))])
+    result = generate_test_cases('print("Hello, World!")', 'Python', 'pytest')
+    assert result == 'Test cases', 'Expected Test cases, but got {}'.format(result)
 
-    def create(self, model, messages, temperature, max_tokens):
-        return Mock(choices=[Mock(message=Mock(content='Python'))])
-
-# Mocking OpenAI client for error scenario
-class MockClientError:
-    def chat(self):
-        return self
-
-    def completions(self):
-        return self
-
-    def create(self, model, messages, temperature, max_tokens):
-        raise Exception('OpenAI error')
-
-# Test detect_language function
-@patch('your_module.client', new_callable=MockClient)
-def test_detect_language():
-    code = 'print("Hello, World!")'
-    assert detect_language(code) == 'Python'
-
-# Test detect_language function with error
-@patch('your_module.client', new_callable=MockClientError)
-def test_detect_language_error():
-    code = 'print("Hello, World!")'
-    assert detect_language(code) == 'Unknown'
-
-# Test generate_test_cases function
-@patch('your_module.client', new_callable=MockClient)
-def test_generate_test_cases():
-    code = 'print("Hello, World!")'
-    language = 'Python'
-    framework = 'pytest'
-    assert generate_test_cases(code, language, framework) == 'Python'
-
-# Test generate_test_cases function with error
-@patch('your_module.client', new_callable=MockClientError)
-def test_generate_test_cases_error():
-    code = 'print("Hello, World!")'
-    language = 'Python'
-    framework = 'pytest'
-    assert generate_test_cases(code, language, framework).startswith('# Error generating test cases')
-
-# Test extract_class_name function
+# Test for extract_class_name function
 def test_extract_class_name():
-    code = 'class HelloWorld:'
-    language = 'Python'
-    assert extract_class_name(code, language) == 'HelloWorld'
+    code = 'class HelloWorld:\n    pass'
+    result = extract_class_name(code, 'Python')
+    assert result == 'HelloWorld', 'Expected HelloWorld, but got {}'.format(result)
 
-# Test save_test_case_to_file function
-def test_save_test_case_to_file(tmpdir):
-    class_name = 'HelloWorld'
-    language = 'Python'
-    test_code = 'def test_hello_world():\n    assert True'
-    save_test_case_to_file(class_name, language, test_code)
-    assert os.path.exists(f'generated_unit_test_cases/HelloWorldTest.py')
+# Test for save_test_case_to_file function
+@patch('builtins.open', new_callable=MagicMock)
+def test_save_test_case_to_file(mock_open):
+    save_test_case_to_file('HelloWorld', 'Python', 'Test cases')
+    mock_open.assert_called_once_with('generated_unit_test_cases/HelloWorldTest.py', 'w', encoding='utf-8')
 
-# Test generate_tests endpoint
-def test_generate_tests_endpoint():
+# Test for generate_tests endpoint
+@patch('your_flask_app.detect_language')
+@patch('your_flask_app.generate_test_cases')
+@patch('your_flask_app.extract_class_name')
+@patch('your_flask_app.save_test_case_to_file')
+def test_generate_tests_endpoint(mock_save, mock_extract, mock_generate, mock_detect):
+    mock_detect.return_value = 'Python'
+    mock_generate.return_value = 'Test cases'
+    mock_extract.return_value = 'HelloWorld'
     with app.test_client() as c:
-        rv = c.post('/generate_tests', json={'code': 'print("Hello, World!")', 'framework': 'pytest'})
-        json_data = rv.get_json()
-        assert rv.status_code == 200
-        assert 'detected_language' in json_data
-        assert 'generated_tests' in json_data
+        response = c.post('/generate_tests', json={'code': 'print("Hello, World!")', 'framework': 'pytest'})
+    assert response.status_code == 200
+    assert response.get_json() == {'detected_language': 'Python', 'generated_tests': 'Test cases'}
 
-# Test regenerate_tests_with_feedback endpoint
-def test_regenerate_tests_with_feedback_endpoint():
+# Test for regenerate_tests_with_feedback endpoint
+@patch('your_flask_app.client.chat.completions.create')
+def test_regenerate_with_feedback(mock_create):
+    mock_create.return_value = MagicMock(choices=[MagicMock(message=MagicMock(content='Test cases'))])
     with app.test_client() as c:
-        rv = c.post('/regenerate_tests_with_feedback', json={'code': 'print("Hello, World!")', 'framework': 'pytest', 'feedback': 'Test feedback'})
-        json_data = rv.get_json()
-        assert rv.status_code == 200
-        assert 'generated_tests' in json_data
+        response = c.post('/regenerate_tests_with_feedback', json={'code': 'print("Hello, World!")', 'framework': 'pytest', 'feedback': 'Feedback'})
+    assert response.status_code == 200
+    assert response.get_json() == {'generated_tests': 'Test cases'}
 ```
 
-Please replace `your_module` with the actual name of the module where the Flask app is defined. These tests cover normal, edge and invalid cases for the functions and endpoints in the provided code.
+Please replace `your_flask_app` with the actual name of your Flask application module.
