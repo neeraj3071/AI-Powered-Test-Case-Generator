@@ -45,17 +45,15 @@ jobs:
         mkdir -p reports
         mv generated_tests_report.md reports/generated_tests_report.md || true
 
-        # Create local branch from detached HEAD
         git checkout -b temp-branch
 
-        # Stage report + generated test files
         git add reports/generated_tests_report.md
         git add generated_unit_test_cases/
 
-        git commit -m "🧪 Add generated unit test cases and report"
+        git diff --cached --quiet || git commit -m "🧪 Add generated unit test cases and report"
 
-        # Avoid push conflicts by pulling latest
-        git pull --rebase origin ${{ github.head_ref }}
+        # ✅ Disable rebase, allow unrelated histories, resolve conflicts
+        git config pull.rebase false
+        git pull --no-rebase origin ${{ github.head_ref }} --strategy=ours --no-edit --allow-unrelated-histories
 
-        # Push to the same PR branch
         git push origin HEAD:${{ github.head_ref }}
