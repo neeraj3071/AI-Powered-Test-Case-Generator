@@ -70,12 +70,26 @@ def main():
             framework = FRAMEWORK_MAP.get(ext, "pytest")
             response = send_to_backend(code, framework)
 
-            detected_lang = response.get("detected_language", "Unknown")
-            test_code = response.get("generated_tests", "Failed to generate.")
+            detected_lang = response.get("detected_language", "Unknown").lower()
+
+            # Fallback based on file extension if detection fails
+            if detected_lang == "unknown":
+                if ext == ".py":
+                    detected_lang = "python"
+                elif ext == ".java":
+                    detected_lang = "java"
+
+            print(f"Detected language: {detected_lang}")
+
+            # Clean test code output
+            raw_test_code = response.get("generated_tests", "Failed to generate.")
+            test_code = re.sub(r"```[a-zA-Z]*\n?", "", raw_test_code).strip("` \n")
 
             class_name = extract_class_name(code, detected_lang)
+            print(f"Extracted class name: {class_name}")
+
             ext_map = {"python": "py", "java": "java"}
-            file_ext = ext_map.get(detected_lang.lower(), "txt")
+            file_ext = ext_map.get(detected_lang, "txt")
             file_name = f"{class_name}Test.{file_ext}"
             output_path = os.path.join("generated_unit_test_cases", file_name)
 
