@@ -1,9 +1,9 @@
-
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from openai import OpenAI
 from dotenv import load_dotenv
 import os
+import re
 
 # Load environment variables
 load_dotenv()
@@ -97,6 +97,34 @@ Output ONLY the test code — no markdown, no explanations, no extra text.
         print("Test generation error:", e)
         return f"# Error generating test cases: {str(e)}"
 
+# Extract class name from the code (fallback to "Generated")
+def extract_class_name(code: str, language: str) -> str:
+    if language.lower() == "python":
+        match = re.search(r'class\s+(\w+)', code)
+    elif language.lower() == "java":
+        match = re.search(r'public\s+class\s+(\w+)', code)
+    else:
+        match = re.search(r'class\s+(\w+)', code)
+
+    return match.group(1) if match else "Generated"
+
+# Save generated test cases to a file
+def save_test_case_to_file(class_name: str, language: str, test_code: str):
+    folder = "generated_unit_test_cases"
+    os.makedirs(folder, exist_ok=True)
+
+    extension_map = {
+        "python": "py",
+        "java": "java",
+        "javascript": "js"
+    }
+    ext = extension_map.get(language.lower(), "txt")
+    filename = f"{class_name}Test.{ext}"
+    filepath = os.path.join(folder, filename)
+
+    with open(filepath, "w", encoding="utf-8") as f:
+        f.write(test_code)
+
 # Endpoint: Generate initial test cases
 @app.route("/generate_tests", methods=["POST"])
 def generate_tests():
@@ -110,6 +138,10 @@ def generate_tests():
 
         detected_language = detect_language(input_code)
         test_cases = generate_test_cases(input_code, detected_language, framework)
+
+        # Extract class name and save the file
+        class_name = extract_class_name(input_code, detected_language)
+        save_test_case_to_file(class_name, detected_language, test_cases)
 
         return jsonify({
             "detected_language": detected_language,

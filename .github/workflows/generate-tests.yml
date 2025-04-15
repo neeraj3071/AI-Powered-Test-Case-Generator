@@ -36,23 +36,26 @@ jobs:
         echo "---- GENERATED TEST CASES ----"
         cat generated_tests_report.md || echo "⚠️ No test file generated"
 
-    - name: Commit and push generated test report
-      if: success() && hashFiles('generated_tests_report.md') != ''
+    - name: Commit and push generated test cases and report
+      if: success() && (hashFiles('generated_tests_report.md') != '' || hashFiles('generated_unit_test_cases/**') != '')
       run: |
         git config --global user.name "github-actions[bot]"
         git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
         mkdir -p reports
-        mv generated_tests_report.md reports/generated_tests_report.md
+        mv generated_tests_report.md reports/generated_tests_report.md || true
 
         # Create local branch from detached HEAD
         git checkout -b temp-branch
 
-        # Add and commit report
+        # Stage report + generated test files
         git add reports/generated_tests_report.md
-        git commit -m "🧪 Add generated test report"
+        git add generated_unit_test_cases/
 
-        # Pull latest changes from PR branch (avoid push conflicts)
+        git commit -m "🧪 Add generated unit test cases and report"
+
+        # Avoid push conflicts by pulling latest
         git pull --rebase origin ${{ github.head_ref }}
 
-        # Push changes back to the same PR branch
+        # Push to the same PR branch
         git push origin HEAD:${{ github.head_ref }}
